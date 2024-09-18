@@ -104,10 +104,7 @@ class HeadPredictor:
 
         img = torch.Tensor(img[None, :]).to(self.device)
 
-        start = time.time()
         R_pred = self.model(img)
-        end = time.time()
-        print('Head pose estimation: %2f ms' % ((end - start)*1000.))
 
         euler = utils.compute_euler_angles_from_rotation_matrices(
             R_pred)*180/np.pi
