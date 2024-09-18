@@ -81,7 +81,7 @@ class HeadPredictor:
     def run(self, frame: np.ndarray) -> dict[str, float]:
         faces = self.detector(frame)
 
-        box, landmarks, score = next((face for face in faces if face[2] > .95), None)
+        box, landmarks, score = next(((box, landmarks, score) for box, landmarks, score in faces if score > 0.95), (None, None, None))
         if box is None:
             return None
 
@@ -126,6 +126,8 @@ class HeadPredictor:
         }
 
     def annotate_frame(self, frame: np.ndarray, info: dict[str, float]):
+        if info is None:
+            return
         bbox_width = info['x_max'] - info['x_min']
         utils.plot_pose_cube(frame,  info['y_pred_deg'], info['p_pred_deg'], info['r_pred_deg'], info['x_min'] + int(.5*(
             info['x_max']-info['x_min'])), info['y_min'] + int(.5*(info['y_max']-info['y_min'])), size=bbox_width)
