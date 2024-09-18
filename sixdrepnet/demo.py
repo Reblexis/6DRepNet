@@ -123,14 +123,14 @@ class HeadPredictor:
             'y_min': y_min,
             'x_max': x_max,
             'y_max': y_max,
+            'bbox_width': bbox_width,
         }
 
     def annotate_frame(self, frame: np.ndarray, info: dict[str, float]):
         if info is None:
             return
-        bbox_width = info['x_max'] - info['x_min']
         utils.plot_pose_cube(frame,  info['y_pred_deg'], info['p_pred_deg'], info['r_pred_deg'], info['x_min'] + int(.5*(
-            info['x_max']-info['x_min'])), info['y_min'] + int(.5*(info['y_max']-info['y_min'])), size=bbox_width)
+            info['x_max']-info['x_min'])), info['y_min'] + int(.5*(info['y_max']-info['y_min'])), size=info['bbox_width'])
 
 
 if __name__ == '__main__':
@@ -166,6 +166,8 @@ if __name__ == '__main__':
     model.eval()  # Change model to 'eval' mode (BN uses moving mean/var).
 
     cap = cv2.VideoCapture(cam)
+    cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
+    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
 
     # Check if the webcam is opened correctly
     if not cap.isOpened():
