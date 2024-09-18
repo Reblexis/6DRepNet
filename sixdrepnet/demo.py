@@ -52,6 +52,84 @@ transformations = transforms.Compose([transforms.Resize(224),
                                       transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
 
 
+class HeadPredictor:
+    def __init__(self, snapshot_path: str):
+        cudnn.enabled = True
+        self.model = SixDRepNet(backbone_name='RepVGG-B1g2',
+                        backbone_file='',
+                        deploy=True,
+                        pretrained=False)
+
+
+        self.detector = RetinaFace(gpu_id=0)
+
+        # Load snapshot
+        saved_state_dict = torch.load(os.path.join(
+            snapshot_path), map_location='cpu')
+
+        if 'model_state_dict' in saved_state_dict:
+            self.model.load_state_dict(saved_state_dict['model_state_dict'])
+        else:
+            self.model.load_state_dict(saved_state_dict)
+        
+        self.device = "cuda:0"
+        self.model.to(self.device)
+
+        # Test the Model
+        self.model.eval()  # 
+
+    def run(self, frame: np.ndarray) -> dict[str, float]:
+        faces = self.detector(frame)
+
+        box, landmarks, score = next((face for face in faces if face[2] > .95), None)
+        if box is None:
+            return None
+
+        x_min = int(box[0])
+        y_min = int(box[1])
+        x_max = int(box[2])
+        y_max = int(box[3])
+        bbox_width = abs(x_max - x_min)
+        bbox_height = abs(y_max - y_min)
+
+        x_min = max(0, x_min-int(0.2*bbox_height))
+        y_min = max(0, y_min-int(0.2*bbox_width))
+        x_max = x_max+int(0.2*bbox_height)
+        y_max = y_max+int(0.2*bbox_width)
+
+        img = frame[y_min:y_max, x_min:x_max]
+        img = Image.fromarray(img)
+        img = img.convert('RGB')
+        img = transformations(img)
+
+        img = torch.Tensor(img[None, :]).to(self.device)
+
+        start = time.time()
+        R_pred = self.model(img)
+        end = time.time()
+        print('Head pose estimation: %2f ms' % ((end - start)*1000.))
+
+        euler = utils.compute_euler_angles_from_rotation_matrices(
+            R_pred)*180/np.pi
+        p_pred_deg = euler[:, 0].cpu()
+        y_pred_deg = euler[:, 1].cpu()
+        r_pred_deg = euler[:, 2].cpu()
+
+        return {
+            'y_pred_deg': y_pred_deg,
+            'p_pred_deg': p_pred_deg,
+            'r_pred_deg': r_pred_deg,
+            'x_min': x_min,
+            'y_min': y_min,
+            'x_max': x_max,
+            'y_max': y_max,
+        }
+
+    def annotate_frame(self, frame: np.ndarray, info: dict[str, float]):
+        utils.plot_pose_cube(frame,  info['y_pred_deg'], info['p_pred_deg'], info['r_pred_deg'], info['x_min'] + int(.5*(
+            info['x_max']-info['x_min'])), info['y_min'] + int(.5*(info['y_max']-info['y_min'])), size=info['bbox_width'])
+
+
 if __name__ == '__main__':
     args = parse_args()
     cudnn.enabled = True
