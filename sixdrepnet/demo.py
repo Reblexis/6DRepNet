@@ -79,49 +79,50 @@ class HeadPredictor:
         self.model.eval()  # 
 
     def run(self, frame: np.ndarray) -> dict[str, float]:
-        faces = self.detector(frame)
+        with torch.no_grad():
+            faces = self.detector(frame)
 
-        box, landmarks, score = next(((box, landmarks, score) for box, landmarks, score in faces if score > 0.95), (None, None, None))
-        if box is None:
-            return None
+            box, landmarks, score = next(((box, landmarks, score) for box, landmarks, score in faces if score > 0.95), (None, None, None))
+            if box is None:
+                return None
 
-        x_min = int(box[0])
-        y_min = int(box[1])
-        x_max = int(box[2])
-        y_max = int(box[3])
-        bbox_width = abs(x_max - x_min)
-        bbox_height = abs(y_max - y_min)
+            x_min = int(box[0])
+            y_min = int(box[1])
+            x_max = int(box[2])
+            y_max = int(box[3])
+            bbox_width = abs(x_max - x_min)
+            bbox_height = abs(y_max - y_min)
 
-        x_min = max(0, x_min-int(0.2*bbox_height))
-        y_min = max(0, y_min-int(0.2*bbox_width))
-        x_max = x_max+int(0.2*bbox_height)
-        y_max = y_max+int(0.2*bbox_width)
+            x_min = max(0, x_min-int(0.2*bbox_height))
+            y_min = max(0, y_min-int(0.2*bbox_width))
+            x_max = x_max+int(0.2*bbox_height)
+            y_max = y_max+int(0.2*bbox_width)
 
-        img = frame[y_min:y_max, x_min:x_max]
-        img = Image.fromarray(img)
-        img = img.convert('RGB')
-        img = transformations(img)
+            img = frame[y_min:y_max, x_min:x_max]
+            img = Image.fromarray(img)
+            img = img.convert('RGB')
+            img = transformations(img)
 
-        img = torch.Tensor(img[None, :]).to(self.device)
+            img = torch.Tensor(img[None, :]).to(self.device)
 
-        R_pred = self.model(img)
+            R_pred = self.model(img)
 
-        euler = utils.compute_euler_angles_from_rotation_matrices(
-            R_pred)*180/np.pi
-        p_pred_deg = euler[:, 0].cpu()
-        y_pred_deg = euler[:, 1].cpu()
-        r_pred_deg = euler[:, 2].cpu()
+            euler = utils.compute_euler_angles_from_rotation_matrices(
+                R_pred)*180/np.pi
+            p_pred_deg = euler[:, 0].item()
+            y_pred_deg = euler[:, 1].item()
+            r_pred_deg = euler[:, 2].item()
 
-        return {
-            'y_pred_deg': y_pred_deg,
-            'p_pred_deg': p_pred_deg,
-            'r_pred_deg': r_pred_deg,
-            'x_min': x_min,
-            'y_min': y_min,
-            'x_max': x_max,
-            'y_max': y_max,
-            'bbox_width': bbox_width,
-        }
+            return {
+                'y_pred_deg': y_pred_deg,
+                'p_pred_deg': p_pred_deg,
+                'r_pred_deg': r_pred_deg,
+                'x_min': x_min,
+                'y_min': y_min,
+                'x_max': x_max,
+                'y_max': y_max,
+                'bbox_width': bbox_width,
+            }
 
     def annotate_frame(self, frame: np.ndarray, info: dict[str, float]):
         if info is None:
