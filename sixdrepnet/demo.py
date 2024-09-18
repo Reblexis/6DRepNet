@@ -126,8 +126,9 @@ class HeadPredictor:
         }
 
     def annotate_frame(self, frame: np.ndarray, info: dict[str, float]):
+        bbox_width = info['x_max'] - info['x_min']
         utils.plot_pose_cube(frame,  info['y_pred_deg'], info['p_pred_deg'], info['r_pred_deg'], info['x_min'] + int(.5*(
-            info['x_max']-info['x_min'])), info['y_min'] + int(.5*(info['y_max']-info['y_min'])), size=info['bbox_width'])
+            info['x_max']-info['x_min'])), info['y_min'] + int(.5*(info['y_max']-info['y_min'])), size=bbox_width)
 
 
 if __name__ == '__main__':
