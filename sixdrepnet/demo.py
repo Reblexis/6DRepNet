@@ -8,7 +8,6 @@ import argparse
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
 
 import numpy as np
-from numpy.lib.function_base import _quantile_unchecked
 import cv2
 import torch
 import torch.nn as nn
@@ -51,6 +50,7 @@ transformations = transforms.Compose([transforms.Resize(224),
                                       transforms.CenterCrop(224),
                                       transforms.ToTensor(),
                                       transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
+
 
 if __name__ == '__main__':
     args = parse_args()
