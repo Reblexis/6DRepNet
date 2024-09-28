@@ -114,9 +114,9 @@ class HeadPredictor:
             r_pred_deg = euler[:, 2].item()
 
             return {
-                'y_pred_deg': y_pred_deg,
-                'p_pred_deg': p_pred_deg,
-                'r_pred_deg': r_pred_deg,
+                'yaw_pred_deg': y_pred_deg,
+                'pitch_pred_deg': p_pred_deg,
+                'roll_pred_deg': r_pred_deg,
                 'x_min': x_min,
                 'y_min': y_min,
                 'x_max': x_max,
@@ -127,7 +127,7 @@ class HeadPredictor:
     def annotate_frame(self, frame: np.ndarray, info: dict[str, float]):
         if info is None:
             return
-        utils.plot_pose_cube(frame,  info['y_pred_deg'], info['p_pred_deg'], info['r_pred_deg'], info['x_min'] + int(.5*(
+        utils.plot_pose_cube(frame,  info['yaw_pred_deg'], info['pitch_pred_deg'], info['roll_pred_deg'], info['x_min'] + int(.5*(
             info['x_max']-info['x_min'])), info['y_min'] + int(.5*(info['y_max']-info['y_min'])), size=info['bbox_width'])
 
 
