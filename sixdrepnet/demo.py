@@ -74,23 +74,16 @@ class HeadPredictor:
         
         self.device = "cuda:0"
         self.model.to(self.device)
-        #self.model = torch.compile(self.model)
 
         # Test the Model
         self.model.eval()  # 
 
-    def run(self, frame: np.ndarray) -> dict[str, float]:
+    def run(self, frame: np.ndarray, face_info: dict[str, float]) -> dict[str, float]:
         with torch.no_grad():
-            faces = self.detector(frame)
-
-            box, landmarks, score = next(((box, landmarks, score) for box, landmarks, score in faces if score > 0.95), (None, None, None))
-            if box is None:
-                return None
-
-            x_min = int(box[0])
-            y_min = int(box[1])
-            x_max = int(box[2])
-            y_max = int(box[3])
+            x_min = int(face_info['x_min'])
+            y_min = int(face_info['y_min'])
+            x_max = int(face_info['x_max'])
+            y_max = int(face_info['y_max'])
             bbox_width = abs(x_max - x_min)
             bbox_height = abs(y_max - y_min)
 
@@ -106,10 +99,7 @@ class HeadPredictor:
 
             img = torch.Tensor(img[None, :]).to(self.device)
 
-            start = time.time()
             R_pred = self.model(img)
-            end = time.time()
-            print('Head pose estimation: %2f ms' % ((end - start)*1000.))
 
             euler = utils.compute_euler_angles_from_rotation_matrices(
                 R_pred)
