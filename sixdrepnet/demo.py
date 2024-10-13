@@ -61,8 +61,6 @@ class HeadPredictor:
                         pretrained=False)
 
 
-        self.detector = RetinaFace(gpu_id=0)
-
         # Load snapshot
         saved_state_dict = torch.load(os.path.join(
             snapshot_path), map_location='cpu')
@@ -72,7 +70,7 @@ class HeadPredictor:
         else:
             self.model.load_state_dict(saved_state_dict)
         
-        self.device = "cuda:0"
+        self.device = ("cuda" if torch.cuda.is_available() else "cpu")
         self.model.to(self.device)
 
         # Test the Model
